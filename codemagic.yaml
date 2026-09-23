@@ -1,0 +1,123 @@
+# Build na nuvem (Codemagic) — Android e iOS
+# Gerado automaticamente pelo Leon Apps.
+# Com chave de assinatura cadastrada no Leon Apps: sai o .aab (Play Store) e o .ipa (App Store).
+# Sem chave: sai um APK de teste (Android) e um app iOS sem assinatura.
+workflows:
+  android-release:
+    name: Hospitalize — Android
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      node: 20
+      java: 21
+    scripts:
+      - name: Instalar dependências
+        script: npm install
+      - name: Preparar projeto Android
+        script: |
+          npx cap add android || true
+          npx capacitor-assets generate || true
+          node scripts/apply-native-config.mjs
+          npx cap sync android
+      - name: Assinatura
+        script: |
+          if [ -n "$CM_KEYSTORE" ]; then
+            echo "$CM_KEYSTORE" | base64 --decode > android/app/upload-keystore.jks
+            cat > android/key.properties <<EOF
+          storeFile=upload-keystore.jks
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          keyPassword=$CM_KEY_PASSWORD
+          storeType=${CM_KEYSTORE_TYPE:-JKS}
+          EOF
+            node scripts/apply-signing.mjs
+          else
+            echo "Sem chave de assinatura: será gerado apenas um APK de teste."
+          fi
+      - name: Gerar AAB e APK
+        script: |
+          cd android
+          if [ -n "$CM_KEYSTORE" ]; then
+            ./gradlew bundleRelease assembleRelease
+          else
+            ./gradlew assembleDebug
+          fi
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - mateusdeleonmd@gmail.com
+        notify:
+          success: true
+          failure: true
+      scripts:
+        - name: Avisar o Leon Apps
+          script: |
+            if [ -n "$URL2APP_WEBHOOK" ]; then
+              curl -s -X POST "$URL2APP_WEBHOOK" \
+                -H "content-type: application/json" \
+                -d "{\"buildId\":\"$CM_BUILD_ID\"}" || true
+            fi
+
+  ios-release:
+    name: Hospitalize — iOS
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    environment:
+      node: 20
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Instalar dependências
+        script: npm install
+      - name: Preparar projeto iOS
+        script: |
+          npx cap add ios || true
+          npx capacitor-assets generate || true
+          node scripts/apply-native-config.mjs
+          npx cap sync ios
+          cd ios/App && pod install
+      - name: Assinatura
+        script: |
+          if [ -n "$CM_CERTIFICATE" ]; then
+            keychain initialize
+            echo "$CM_CERTIFICATE" | base64 --decode > /tmp/certificate.p12
+            keychain add-certificates --certificate /tmp/certificate.p12 --certificate-password "$CM_CERTIFICATE_PASSWORD"
+            if [ -n "$CM_PROVISIONING_PROFILE" ]; then
+              mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+              echo "$CM_PROVISIONING_PROFILE" | base64 --decode > "$HOME/Library/MobileDevice/Provisioning Profiles/app.mobileprovision"
+            fi
+            xcode-project use-profiles --project ios/App/App.xcodeproj || true
+          else
+            echo "Sem certificado: o app sairá sem assinatura (não publicável)."
+          fi
+      - name: Gerar IPA
+        script: |
+          if [ -n "$CM_CERTIFICATE" ]; then
+            xcode-project build-ipa --workspace ios/App/App.xcworkspace --scheme App
+          else
+            xcodebuild -workspace ios/App/App.xcworkspace \
+              -scheme App -configuration Release \
+              -sdk iphoneos -derivedDataPath build \
+              CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+          fi
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - build/Build/Products/Release-iphoneos/*.app
+    publishing:
+      email:
+        recipients:
+          - mateusdeleonmd@gmail.com
+        notify:
+          success: true
+          failure: true
+      scripts:
+        - name: Avisar o Leon Apps
+          script: |
+            if [ -n "$URL2APP_WEBHOOK" ]; then
+              curl -s -X POST "$URL2APP_WEBHOOK" \
+                -H "content-type: application/json" \
+                -d "{\"buildId\":\"$CM_BUILD_ID\"}" || true
+            fi

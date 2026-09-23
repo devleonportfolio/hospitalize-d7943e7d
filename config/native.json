@@ -1,0 +1,35 @@
+{
+  "appName": "Hospitalize",
+  "orientation": "portrait",
+  "fullscreen": false,
+  "deeplinkHost": "https://gestao.hospitalize.com.br/",
+  "androidPermissions": [
+    "android.permission.INTERNET",
+    "android.permission.ACCESS_NETWORK_STATE",
+    "android.permission.VIBRATE",
+    "android.permission.CAMERA",
+    "android.permission.ACCESS_COARSE_LOCATION",
+    "android.permission.ACCESS_FINE_LOCATION",
+    "android.permission.USE_BIOMETRIC"
+  ],
+  "iosUsageDescriptions": [
+    {
+      "key": "NSCameraUsageDescription",
+      "value": "Usamos a câmera para você enviar fotos no app."
+    },
+    {
+      "key": "NSPhotoLibraryUsageDescription",
+      "value": "Usamos suas fotos para você enviar imagens no app."
+    },
+    {
+      "key": "NSLocationWhenInUseUsageDescription",
+      "value": "Usamos sua localização para mostrar conteúdo próximo de você."
+    },
+    {
+      "key": "NSFaceIDUsageDescription",
+      "value": "Use o Face ID para acessar sua conta."
+    }
+  ],
+  "androidQueries": true,
+  "iosFileSharing": true
+}

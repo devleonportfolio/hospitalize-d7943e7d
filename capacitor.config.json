@@ -1,0 +1,32 @@
+{
+  "appId": "app.hospitalize.com",
+  "appName": "Hospitalize",
+  "webDir": "www",
+  "server": {
+    "url": "https://gestao.hospitalize.com.br/",
+    "cleartext": false,
+    "androidScheme": "https",
+    "errorPath": "offline.html"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#ffffff"
+  },
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#ffffff",
+    "scrollEnabled": true,
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "backgroundColor": "#ffffff",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "backgroundColor": "#204d87",
+      "style": "DARK"
+    }
+  }
+}
